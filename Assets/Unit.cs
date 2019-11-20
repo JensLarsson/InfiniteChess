@@ -16,7 +16,14 @@ public class Unit : MonoBehaviour
     {
         get { return moves; }
     }
-
+    protected Vector2Int CalculateGridPosition(Vector2Int pos)
+    {
+        while (pos.x < 0) pos.x += 16;
+        while (pos.y < 0) pos.y += 8;
+        pos.x = pos.x % 16;
+        pos.y = pos.y % 8;
+        return pos;
+    }
     Vector2Int[,] newMoveGrid = { { } };
     bool[,] moveGrid = { { } };
 
@@ -66,22 +73,22 @@ public class Pawn : Unit
             {new Vector2Int(99999, 99999), new Vector2Int(99999, 99999)}
         };
 
-        Vector2Int pos = new Vector2Int(2, 0) * direction + position;
+        Vector2Int pos = CalculateGridPosition(new Vector2Int(2, 0) * direction + position);
         if (moves == 0 && units[pos.x, pos.y] == null && units[pos.x - 1 * direction, pos.y] == null)
         {
             grid[0, 1] = pos;
         }
-        pos = new Vector2Int(1, 0) * direction + position;
+        pos = CalculateGridPosition(new Vector2Int(1, 0) * direction + position);
         if (units[pos.x, pos.y] == null)
         {
             grid[0, 0] = pos;
         }
-        pos = new Vector2Int(1 * direction, 1) + position;
+        pos = CalculateGridPosition(new Vector2Int(1 * direction, 1) + position);
         if (units[pos.x, pos.y] != null)
         {
             grid[1, 0] = pos;
         }
-        pos = new Vector2Int(1 * direction, -1) + position;
+        pos = CalculateGridPosition(new Vector2Int(1 * direction, -1) + position);
         if (units[pos.x, pos.y] != null)
         {
             grid[2, 0] = pos;
@@ -129,7 +136,7 @@ public class King : Unit
         {
             for (int j = 0; j < moveGrid.GetLength(1); j++)
             {
-                moveGrid[i, j] = newMoveGrid[i, j] + position;
+                moveGrid[i, j] = CalculateGridPosition(newMoveGrid[i, j] + position);
             }
         }
         return moveGrid;
@@ -160,7 +167,7 @@ public class Knight : Unit
         {
             for (int j = 0; j < moveGrid.GetLength(1); j++)
             {
-                moveGrid[i, j] = newMoveGrid[i, j] + position;
+                moveGrid[i, j] = CalculateGridPosition(newMoveGrid[i, j] + position);
             }
         }
         return moveGrid;
@@ -196,7 +203,7 @@ public class Bishop : Unit
         {
             for (int j = 0; j < moveGrid.GetLength(1); j++)
             {
-                moveGrid[i, j] = newMoveGrid[i, j] + position;
+                moveGrid[i, j] = CalculateGridPosition(newMoveGrid[i, j] + position);
             }
         }
         return moveGrid;
@@ -229,7 +236,7 @@ public class Rook : Unit
         {
             for (int j = 0; j < moveGrid.GetLength(1); j++)
             {
-                moveGrid[i, j] = newMoveGrid[i, j] + position;
+                moveGrid[i, j] = CalculateGridPosition(newMoveGrid[i, j] + position);
             }
         }
         return moveGrid;
@@ -281,7 +288,7 @@ public class Queen : Unit
         {
             for (int j = 0; j < moveGrid.GetLength(1); j++)
             {
-                moveGrid[i, j] = newMoveGrid[i, j] + position;
+                moveGrid[i, j] = CalculateGridPosition(newMoveGrid[i, j] + position);
             }
         }
         return moveGrid;
