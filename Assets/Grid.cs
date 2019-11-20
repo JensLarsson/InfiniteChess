@@ -12,6 +12,7 @@ public class Grid : MonoBehaviour
     float xOffset = 0, yOffset = 0;
     List<Player> players = new List<Player>();
     bool playerFlag = false;
+    Player player;
     int PlayerFlag
     {
         get
@@ -20,14 +21,16 @@ public class Grid : MonoBehaviour
             else return 1;
         }
     }
-    bool gameOver = false;
+    bool gameOver = true;
     Unit selectedUnit;
     Unit[,] units;
     List<Tile> moveMarkers = new List<Tile>();
     [HideInInspector] public static Tile[,] tiles;
     public int xMax = 16, yMax = 8;
     // Start is called before the first frame update
-    void Start()
+
+
+    public void CreateBoard()
     {
         Mesh mesh = new Mesh();
         mesh.vertices = new Vector3[] {
@@ -95,6 +98,7 @@ public class Grid : MonoBehaviour
         CreateUnit<Pawn>(13, 3, players[1]);
         CreateUnit<Pawn>(13, 4, players[1]);
         CreateUnit<Pawn>(13, 5, players[1]);
+        gameOver = false;
     }
 
     void CreateUnit<T>(int x, int y, Player player) where T : Unit
@@ -132,7 +136,7 @@ public class Grid : MonoBehaviour
                 selectedUnit = null;
                 playerFlag = !playerFlag;
             }
-            else if (HasUnit(pos) && moveMarkers.Count == 0 && units[pos.x, pos.y].player == players[PlayerFlag])
+            else if (HasUnit(pos) && moveMarkers.Count == 0 && player == players[PlayerFlag])
             {
                 SetMoveMarkers(units[pos.x, pos.y]);
                 selectedUnit = units[pos.x, pos.y];
@@ -149,42 +153,45 @@ public class Grid : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        xOffset -= Input.GetAxis("Horizontal") * Time.deltaTime * speed;
-        yOffset -= Input.GetAxis("Vertical") * Time.deltaTime * speed;
-        //Handle Mouse Click
-        if (Input.GetKeyDown(KeyCode.Mouse0))
+        if (!gameOver)
         {
-            Ray ray = camera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit))
+            xOffset -= Input.GetAxis("Horizontal") * Time.deltaTime * speed;
+            yOffset -= Input.GetAxis("Vertical") * Time.deltaTime * speed;
+            //Handle Mouse Click
+            if (Input.GetKeyDown(KeyCode.Mouse0))
             {
-                //If click on board
-                if (hit.point.x >= 0 && hit.point.x < xMax && hit.point.y >= 0 && hit.point.y < yMax)
+                Ray ray = camera.ScreenPointToRay(Input.mousePosition);
+                RaycastHit hit;
+                if (Physics.Raycast(ray, out hit))
                 {
-                    ClickBoard(hit.point);
+                    //If click on board
+                    if (hit.point.x >= 0 && hit.point.x < xMax && hit.point.y >= 0 && hit.point.y < yMax)
+                    {
+                        ClickBoard(hit.point);
+                    }
                 }
             }
-        }
 
-        //Movement for Tiles
-        for (int x = 0; x < xMax; x++)
-        {
-            for (int y = 0; y < yMax; y++)
+            //Movement for Tiles
+            for (int x = 0; x < xMax; x++)
             {
-                tiles[x, y].transform.position = CalculateGridPosition(x + 0.5f + xOffset, y + 0.5f + yOffset);
+                for (int y = 0; y < yMax; y++)
+                {
+                    tiles[x, y].transform.position = CalculateGridPosition(x + 0.5f + xOffset, y + 0.5f + yOffset);
+                }
             }
-        }
-        //Movement for units
-        foreach (Unit unit in units)
-        {
-            if (unit != null)
+            //Movement for units
+            foreach (Unit unit in units)
             {
-                moveUnit(unit);
+                if (unit != null)
+                {
+                    moveUnit(unit);
+                }
             }
-        }
-        foreach (Tile tObject in moveMarkers)
-        {
-            moveUnit(tObject.gameObject, tObject.position);
+            foreach (Tile tObject in moveMarkers)
+            {
+                moveUnit(tObject.gameObject, tObject.position);
+            }
         }
     }
 

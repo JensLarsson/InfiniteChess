@@ -16,7 +16,9 @@ public class GameOver : MonoBehaviour
     void Gameover(EventParameter eParam)
     {
         image.gameObject.SetActive(true);
-        image.color = eParam.playerParam.playerColour;
+        Color colour = eParam.playerParam.playerColour;
+        colour.a = 0.75f;
+        image.color = colour;
         text.text = eParam.playerParam.playerName + " Wins!";
     }
 }
