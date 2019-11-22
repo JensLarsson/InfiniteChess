@@ -16,7 +16,7 @@ public class Server : MonoBehaviour
     private TcpListener server;
     private bool serverStarted;
 
-    private void Start()
+    public void StartServer()
     {
         clients = new List<ServerClient>();
         disconnectList = new List<ServerClient>();
@@ -28,7 +28,7 @@ public class Server : MonoBehaviour
 
             StartListening();
             serverStarted = true;
-            Debug.Log("Server has Started oin port " + port.ToString());
+            Debug.Log("Server has Started on port " + port.ToString());
         }
         catch (Exception ex)
         {
@@ -136,6 +136,19 @@ public class Server : MonoBehaviour
         {
             client.clientName = data.Split('|')[1];
             Broadcast(client.clientName + " has connected! ", clients);
+            return;
+        }
+        if (data.Contains("&MOVE"))
+        {
+            foreach (ServerClient cli in clients)
+            {
+                if (cli != client)
+                {
+                    StreamWriter writer = new StreamWriter(cli.tcp.GetStream());
+                    writer.WriteLine(data);
+                    writer.Flush();
+                }
+            }
             return;
         }
         Broadcast(client.clientName + ": " + data, clients);

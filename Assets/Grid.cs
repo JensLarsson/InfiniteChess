@@ -30,7 +30,8 @@ public class Grid : MonoBehaviour
     // Start is called before the first frame update
 
 
-    public void CreateBoard()
+
+    public void CreateBoard(bool Hosting)
     {
         Mesh mesh = new Mesh();
         mesh.vertices = new Vector3[] {
@@ -62,6 +63,7 @@ public class Grid : MonoBehaviour
         players.Add(new Player(playerColA, "Player A"));
         players.Add(new Player(playerColB, "Player B"));
         EventManager.Subscribe("KingDestroyed", GameOver);
+        EventManager.Subscribe("MakeMove", MakeMove);
 
         //Player 1
         CreateUnit<Pawn>(2, 2, players[0]);
@@ -99,6 +101,14 @@ public class Grid : MonoBehaviour
         CreateUnit<Pawn>(13, 4, players[1]);
         CreateUnit<Pawn>(13, 5, players[1]);
         gameOver = false;
+        if (Hosting)
+        {
+            player = players[0];
+        }
+        else
+        {
+            player = players[1];
+        }
     }
 
     void CreateUnit<T>(int x, int y, Player player) where T : Unit
@@ -114,34 +124,87 @@ public class Grid : MonoBehaviour
 
     }
 
+    public void MakeMove(Vector2Int from, Vector2Int to)
+    {
+        if (MovePossible(from, to))
+        {
+            if (HasUnit(to))
+            {
+                units[to.x, to.y].DestroyUnit(units[from.x, from.y]);
+            }
+            units[to.x, to.y] = units[from.x, from.y];
+            units[from.x, from.y] = null;
+            units[to.x, to.y].SetPosition(to);
+            units[to.x, to.y].AddMove();
+            playerFlag = !playerFlag;
+        }
+    }
+    public void MakeMove(EventParameter eParam)
+    {
+        if (players[PlayerFlag] != player)
+        {
+            string[] nums = eParam.stringParam.Split(' ');
+            Vector2Int from = new Vector2Int(int.Parse(nums[0]), int.Parse(nums[1]));
+            Vector2Int to = new Vector2Int(int.Parse(nums[2]), int.Parse(nums[3]));
+            Debug.Log(from + "" + to);
+            if (MovePossible(from, to))
+            {
+                Unit tempUnit = null;
+                if (HasUnit(to))
+                {
+                    tempUnit = units[to.x, to.y];
+                }
+                units[to.x, to.y] = units[from.x, from.y];
+                units[from.x, from.y] = null;
+                units[to.x, to.y].SetPosition(to);
+                units[to.x, to.y].AddMove();
+                playerFlag = !playerFlag;
+                if (tempUnit != null)
+                {
+                    tempUnit.DestroyUnit(units[to.x, to.y]);
+                }
+            }
+        }
+    }
+    bool MovePossible(Vector2Int from, Vector2Int to)
+    {
+        List<Vector2Int> moves = PossibleMoves(units[from.x, from.y]);
+        bool possible = false;
+        foreach (Vector2Int vec in moves)
+        {
+            if (vec.x == to.x && vec.y == to.y) possible = true;
+        }
+        return possible;
+    }
+
     public void ClickBoard(Vector3 mousePos)
     {
-        if (!gameOver)
+        if (!gameOver && player == players[PlayerFlag])
         {
             mousePos = CalculateGridPosition(mousePos.x - xOffset, mousePos.y - yOffset);
             Vector2Int pos = new Vector2Int((int)mousePos.x, (int)mousePos.y);
-
             if (moveMarkers.Count > 0 && HasMarker(pos))
             {
-                if (HasUnit(pos))
-                {
-                    units[pos.x, pos.y].DestroyUnit(selectedUnit);
-                }
 
-                units[selectedUnit.Position.x, selectedUnit.Position.y] = null;
-                selectedUnit.SetPosition(pos);
-                selectedUnit.AddMove();
-                units[pos.x, pos.y] = selectedUnit;
+                EventParameter eParam = new EventParameter()
+                {
+                    stringParam = $"&MOVE|{selectedUnit.Position.x.ToString()} {selectedUnit.Position.y.ToString()} {pos.x.ToString()} {pos.y.ToString()}"
+                };
+                EventManager.TriggerEvent("SendMove", eParam);
+                MakeMove(selectedUnit.Position, pos);
+                //units[selectedUnit.Position.x, selectedUnit.Position.y] = null;
+                //selectedUnit.SetPosition(pos);
+                //selectedUnit.AddMove();
+                //units[pos.x, pos.y] = selectedUnit;
+
                 ClearMoveMarkers();
                 selectedUnit = null;
-                playerFlag = !playerFlag;
+                //playerFlag = !playerFlag;
             }
-            else if (HasUnit(pos) && moveMarkers.Count == 0 && player == players[PlayerFlag])
+            else if (HasUnit(pos) && moveMarkers.Count == 0 && units[pos.x, pos.y].player == player)
             {
                 SetMoveMarkers(units[pos.x, pos.y]);
                 selectedUnit = units[pos.x, pos.y];
-                //EventParameter eParam = new EventParameter() { posParam = pos };
-                //EventManager.TriggerEvent("MouseDownGridPosition", eParam);
             }
             else
             {
@@ -208,6 +271,8 @@ public class Grid : MonoBehaviour
             gObject.GetComponent<Tile>().position = pos;
         }
     }
+
+
     List<Vector2Int> PossibleMoves(Unit unit)
     {
         List<Vector2Int> possitions = new List<Vector2Int>();

@@ -9,7 +9,7 @@ using System;
 
 public class Client : MonoBehaviour
 {
-    public Text chatWindow;
+    //public Text chatWindow;
     public string clientName;
 
     private bool socketReady = false;
@@ -18,6 +18,14 @@ public class Client : MonoBehaviour
     private StreamWriter writer;
     private StreamReader reader;
 
+    private void Start()
+    {
+        EventManager.Subscribe("SendMove", SendMove);
+    }
+    void SendMove(EventParameter eParam)
+    {
+        SendTextMessage(eParam.stringParam);
+    }
     public void ConectToServer()
     {
         if (socketReady)
@@ -27,12 +35,6 @@ public class Client : MonoBehaviour
 
         string host = "127.0.0.1";
         int port = 6321;
-
-        string h = GameObject.Find("InputField").GetComponent<InputField>().text;
-        if (h != "")
-        {
-            host = h;
-        }
 
         //Create socket
         try
@@ -73,13 +75,23 @@ public class Client : MonoBehaviour
             SendTextMessage("&NAME|" + clientName);
             return;
         }
-        chatWindow.text += data + "\n";
+        if (data.Contains("&MOVE"))
+        {
+            data = data.Split('|')[1];
+            EventParameter eParam = new EventParameter()
+            {
+                stringParam = data
+            };
+            EventManager.TriggerEvent("MakeMove", eParam);
+            return;
+        }
+        Debug.Log(data);
+        //chatWindow.text += data + "\n";
     }
     public void SendTextMessage(string data)
     {
         if (!socketReady) return;
         writer.WriteLine(data);
-        writer.Close();
         writer.Flush();
     }
 
@@ -99,6 +111,8 @@ public class Client : MonoBehaviour
     }
     private void OnDisable()
     {
+
+        EventManager.UnSubscribe("SendMove", SendMove);
         CloseSocket();
     }
 }
